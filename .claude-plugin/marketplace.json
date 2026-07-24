@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jeff377-plugins",
+  "description": "可跨 repo / 跨團隊共用的 Claude Code plugin 目錄。",
+  "owner": {
+    "name": "jeff377",
+    "email": "jeff377@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "plan-workflow",
+      "description": "計畫文件（docs/plans/）撰寫慣例：先擬計畫再執行、狀態列與多階段表格格式、封存流程。與程式語言 / 框架無關。",
+      "source": "./plugins/plan-workflow"
+    }
+  ]
+}
