@@ -1,4 +1,4 @@
-# jeff377-plugins
+# claude-plugins
 
 可跨 repo / 跨團隊共用的 [Claude Code plugin](https://code.claude.com/docs/en/plugins) 目錄（marketplace）。
 把「與特定專案無關的工作慣例」集中在此一處維護，各 repo 安裝後即同步，避免每個 repo 各留一份副本而 drift。
@@ -17,7 +17,7 @@
 {
   "extraKnownMarketplaces": {
     "jeff377-plugins": {
-      "source": { "source": "github", "repo": "jeff377/jeff377-plugins" }
+      "source": { "source": "github", "repo": "jeff377/claude-plugins" }
     }
   }
 }
@@ -31,6 +31,10 @@
 
 安裝後 `/reload-plugins` 生效；skill 帶命名空間，呼叫為 `/plan-workflow:plan-write`。
 
+> **名稱不一致（刻意）**：repo 名為 `claude-plugins`（`source.repo` 用），marketplace 識別名為
+> `jeff377-plugins`（key 與 `install ...@` 用）。官方保留 `claude-*` 字樣、不可作 marketplace 名
+> （`claude plugin validate` 會擋），故兩者無法對齊；repo 名不受此限，取其 URL 乾淨。
+
 ## 本機開發 / 測試（免建 marketplace）
 
 ```bash
@@ -42,7 +46,7 @@ claude --plugin-dir ./plugins/plan-workflow
 ## 目錄結構
 
 ```
-jeff377-plugins/
+claude-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json        # marketplace 索引（列出本 repo 有哪些 plugin）
 └── plugins/
