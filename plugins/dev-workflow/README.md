@@ -11,6 +11,10 @@
 |-------|------|
 | `plan-write` | 計畫文件的狀態列格式、多階段階段表格、連結慣例（含「公開文件不得連結 plan」）、封存流程規範 |
 | `plan-handoff` | plan 定案後交接給新 session 實作：交接 prompt 的必備內容與範本 |
+| `plan-execute` | 實作期間的驗證閘門：plan 版本確認、範圍宣告與對帳、平行路徑檢查 |
+
+三者涵蓋 plan 的完整生命週期：撰寫（`plan-write`）→ 交接（`plan-handoff`）→
+執行（`plan-execute`）。
 
 ## 搭配 gate 使用（建議）
 
