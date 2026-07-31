@@ -1,6 +1,9 @@
-# plan-workflow
+# dev-workflow
 
-計畫文件工作流慣例，與程式語言 / 框架無關，適用任何以 `docs/plans/` 管理計畫的 repo。
+開發流程慣例，與程式語言 / 框架無關，適用任何以 `docs/plans/` 管理計畫的 repo。
+
+範圍不限於計畫文件——凡「與特定專案無關的開發流程紀律」都收在此：
+計畫的撰寫、執行與交接，後續擴及 CI 驗證、源碼掃描、套件發佈等。
 
 ## 內含 skill
 
@@ -26,7 +29,13 @@
 5. 由使用者要求時才移至封存目錄（慣例 `docs/plans/archive/`）
 6. 公開文件（README / CHANGELOG / ADR / 對外指引）一律不得連結或引用 plan
 
-> 狀態列格式、階段表格、連結慣例、封存細節 → 見 `/plan-workflow:plan-write`。
+> 狀態列格式、階段表格、連結慣例、封存細節 → 見 `/dev-workflow:plan-write`。
 ```
 
 gate（常駐、擋關）與 skill（按需、給格式）分工，是本 plugin 的設計前提。
+
+## 命名沿革
+
+原名 `plan-workflow`（v1.x），v2.0.0 起改為 `dev-workflow`，以容納計畫以外的開發流程 skill。
+升級後 skill 叫用前綴由 `plan-workflow:` 變為 `dev-workflow:`，消費端 repo 的
+`.claude/settings.json` 需同步更新 `enabledPlugins` 的 key。

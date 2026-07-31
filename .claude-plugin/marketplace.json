@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "plan-workflow",
-      "description": "計畫文件（docs/plans/）撰寫慣例：先擬計畫再執行、狀態列與多階段表格格式、封存流程，以及定案後交接給實作 session 的方式。與程式語言 / 框架無關。",
-      "source": "./plugins/plan-workflow"
+      "name": "dev-workflow",
+      "description": "開發流程慣例，與程式語言 / 框架無關：計畫文件（docs/plans/）的撰寫、狀態列與多階段表格格式、封存流程，以及定案後交接給實作 session 的方式。後續擴及 CI、源碼掃描與套件發佈等流程。",
+      "source": "./plugins/dev-workflow"
     }
   ]
 }
