@@ -20,11 +20,20 @@ description: 把已定案的 plan 交接給新 session 實作 —— 整理出�
 ### 首選：`spawn_task`（CCD app 環境）
 
 環境有 `spawn_task` 這類工具時用它——把交接 prompt 當作 task 的 prompt 送出，
-使用者點一下就會在**新的 session** 裡開始。實測（2026-08-01）：
+使用者點一下就會在**新的 session** 裡開始。
 
-- **在主工作樹、當前分支上跑**，不建 git worktree。所以主工作樹裡**尚未 commit 的
-  plan 新 session 讀得到**，這一點與早期的假設相反。
 - **仍由使用者點擊才啟動**，控制權沒有交出去——只是把「複製貼上」換成「點一下」。
+- **啟動時可選 worktree 或 local only，預設是建 worktree**（實測 2026-08-01：未選
+  local only 送出的 task，跑在 `.claude/worktrees/` 底下、掛在自動產生的
+  `claude/*` 分支上）。
+
+> **因此交接 prompt 必須明寫工作樹與分支的期望**，例如「請在主工作樹的 main 上進行」
+> 或「這個任務適合開 worktree」。沒寫的話，使用者可能按預設開了 worktree，而 prompt 裡
+> 「依 repo 慣例直接提交 main」之類的指示就會與實際環境對不上，得中途導正。
+>
+> 走 worktree 時還要注意：**主工作樹尚未 commit 的 plan 在 worktree 裡看不到**
+> （新檔案不存在、已修改的是舊版），新 session 會照著一份它讀不到的 plan 動工且不報錯。
+> 這正是下方「交接前檢查」堅持先 commit 的理由。
 
 > 別把它當成背景執行的 agent：它是一個獨立 session，有自己的對話與 context，
 > 不會把結果回報進本 session。
@@ -37,11 +46,12 @@ description: 把已定案的 plan 交接給新 session 實作 —— 整理出�
 
 **`spawn_task` 不可攜**，所以 skill 不能只寫這一條；備援路徑必須保留。
 
-### 兩條路都要守的一件事：共用工作樹
+### 走 local only / 手動開 session 時：共用工作樹
 
-新 session 與本 session **共用同一棵工作樹**（spawn task 如此；使用者手動開一個
-不加 `--worktree` 的 session 也是如此）。兩邊同時改同一批檔案會互相覆蓋，
-所以下方「交接後」的**交接即交棒**不是建議而是硬要求。
+選 local only 的 spawn task、或使用者手動開一個不加 `--worktree` 的 session，都會與本
+session **共用同一棵工作樹**。兩邊同時改同一批檔案會互相覆蓋，所以下方「交接後」的
+**交接即交棒**不是建議而是硬要求。（走 worktree 則無此問題，但換成上面那個
+「讀不到未 commit 的 plan」的風險。）
 
 ---
 
@@ -49,13 +59,13 @@ description: 把已定案的 plan 交接給新 session 實作 —— 整理出�
 
 ### 1. plan 的 git 狀態
 
-新 session 讀得到主工作樹的未 commit 內容（見上方「共用工作樹」），所以未 commit
-**不會**讓 plan 讀不到。但仍要確認狀態並在 prompt 中明說 git 起點：
+**交接前把 plan commit 掉**，這是最穩的作法——新 session 可能開在 worktree（讀不到
+主工作樹的未 commit 內容），也可能共用主工作樹（讀得到，但 plan 會與實作改動混在同一批
+diff）。兩種情境下先 commit 都比較好。
 
-- 已 commit → prompt 直接寫 plan 路徑與 commit hash
-- 未 commit → prompt 明寫「plan 尚未 commit」。**建議先 commit**，理由不是讀不讀得到，
-  而是實作 session 會在同一棵樹上動工，未 commit 的 plan 容易與實作改動混在同一批
-  diff 裡，事後分不清哪些是決策、哪些是實作
+- 已 commit → prompt 寫 plan 路徑與 commit hash
+- 未 commit → **先問使用者要不要 commit**。若堅持不 commit，prompt 必須明寫
+  「plan 尚未 commit，位於主工作樹」，且該任務**不可開 worktree**
 
 ### 2. plan 是否真的定案
 
@@ -117,7 +127,8 @@ git：<plan 與相關檔案的 commit 狀態、目前分支>
 
 ## 常見錯誤
 
-- ❌ 以「會建 worktree、讀不到未 commit 的 plan」為由拒用 spawn task → ✅ 實測不建 worktree、在主工作樹跑；有這類工具就優先用，純 CLI 才退回可複製 prompt
+- ❌ 因為「可能建 worktree」就整個不用 spawn task → ✅ 有這類工具就優先用，純 CLI 才退回可複製 prompt
+- ❌ prompt 沒交代工作樹 / 分支期望 → ✅ 明寫「在主工作樹的 main 上進行」或「適合開 worktree」，否則預設會開 worktree、與 prompt 裡的 git 指示打架
 - ❌ prompt 只寫「實作 docs/plans/plan-xxx.md」→ ✅ 補齊上表六個區塊
 - ❌ plan 未 commit 就交接、且未在 prompt 中說明 → ✅ 先問要不要 commit，
   不 commit 也要明寫狀態
