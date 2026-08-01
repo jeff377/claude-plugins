@@ -8,24 +8,40 @@ description: 把已定案的 plan 交接給新 session 實作 —— 整理出�
 擬定 plan 的 session 累積了大量討論脈絡，實作用不到；而實作要讀大量原始碼、跑測試，
 適合乾淨的 context。因此「plan 定案 → 換 session 實作」是常見且正確的切換點。
 
-本 skill 規範**交接時要輸出什麼**，以及**為何不代為開 session**。
+本 skill 規範**交接時要輸出什麼**，以及**用哪種方式把它交出去**。
 
 ---
 
-## 做法：輸出可複製的 prompt，由使用者自己開 session
+## 交接方式：優先用 spawn task，否則輸出可複製的 prompt
 
-交接時，整理一段自足的 prompt，放進**單一 fenced code block**（純文字，不加
-`bash` 之類語言標記——那會讓部分介面顯示成可執行指令）。使用者複製後自行開新 session 貼上。
+不論走哪條路，**prompt 的內容要求完全相同**（見下方「必備內容」與「範本」）。
+差別只在遞送方式。
 
-**不要用工具代為開 session**，即使環境提供這類工具：
+### 首選：`spawn_task`（CCD app 環境）
 
-- **多半會建立 git worktree**。worktree 有獨立的工作目錄，**主工作樹尚未 commit 的
-  plan 在裡面不存在**（新檔案）或**是舊版**（已修改的檔案）——新 session 會照著
-  一份它讀不到的 plan 動工，且不會報錯。
-- **分支策略是使用者的決定**。有些人習慣直接在 main 上做，自動建分支會與其工作流衝突。
-- **可攜性**：這類工具通常是特定介面專屬，寫進 skill 會讓其他環境無法照做。
+環境有 `spawn_task` 這類工具時用它——把交接 prompt 當作 task 的 prompt 送出，
+使用者點一下就會在**新的 session** 裡開始。實測（2026-08-01）：
 
-輸出 prompt 讓使用者自己開，沒有以上任何問題。
+- **在主工作樹、當前分支上跑**，不建 git worktree。所以主工作樹裡**尚未 commit 的
+  plan 新 session 讀得到**，這一點與早期的假設相反。
+- **仍由使用者點擊才啟動**，控制權沒有交出去——只是把「複製貼上」換成「點一下」。
+
+> 別把它當成背景執行的 agent：它是一個獨立 session，有自己的對話與 context，
+> 不會把結果回報進本 session。
+
+### 備援：輸出可複製的 prompt
+
+沒有這類工具時（純 CLI、其他介面），把 prompt 放進**單一 fenced code block**
+（純文字，不加 `bash` 之類語言標記——那會讓部分介面顯示成可執行指令），
+由使用者自行開新 session 貼上。
+
+**`spawn_task` 不可攜**，所以 skill 不能只寫這一條；備援路徑必須保留。
+
+### 兩條路都要守的一件事：共用工作樹
+
+新 session 與本 session **共用同一棵工作樹**（spawn task 如此；使用者手動開一個
+不加 `--worktree` 的 session 也是如此）。兩邊同時改同一批檔案會互相覆蓋，
+所以下方「交接後」的**交接即交棒**不是建議而是硬要求。
 
 ---
 
@@ -33,12 +49,13 @@ description: 把已定案的 plan 交接給新 session 實作 —— 整理出�
 
 ### 1. plan 的 git 狀態
 
-新 session 可能在不同的工作目錄或 checkout 狀態下啟動。交接前確認 plan 檔案的狀態，
-**並在 prompt 中明說**：
+新 session 讀得到主工作樹的未 commit 內容（見上方「共用工作樹」），所以未 commit
+**不會**讓 plan 讀不到。但仍要確認狀態並在 prompt 中明說 git 起點：
 
-- 已 commit → prompt 直接寫 plan 路徑即可
-- 未 commit（新增或已修改）→ **先問使用者要不要 commit**。若不 commit，
-  prompt 必須明寫「plan 檔案尚未 commit，位於主工作樹」，讓新 session 知道 git 起點
+- 已 commit → prompt 直接寫 plan 路徑與 commit hash
+- 未 commit → prompt 明寫「plan 尚未 commit」。**建議先 commit**，理由不是讀不讀得到，
+  而是實作 session 會在同一棵樹上動工，未 commit 的 plan 容易與實作改動混在同一批
+  diff 裡，事後分不清哪些是決策、哪些是實作
 
 ### 2. plan 是否真的定案
 
@@ -100,10 +117,10 @@ git：<plan 與相關檔案的 commit 狀態、目前分支>
 
 ## 常見錯誤
 
-- ❌ 用工具代為開 session → ✅ 輸出可複製的 prompt，由使用者自己開
+- ❌ 以「會建 worktree、讀不到未 commit 的 plan」為由拒用 spawn task → ✅ 實測不建 worktree、在主工作樹跑；有這類工具就優先用，純 CLI 才退回可複製 prompt
 - ❌ prompt 只寫「實作 docs/plans/plan-xxx.md」→ ✅ 補齊上表六個區塊
 - ❌ plan 未 commit 就交接、且未在 prompt 中說明 → ✅ 先問要不要 commit，
   不 commit 也要明寫狀態
 - ❌ 把 plan 的設計理由複述進 prompt → ✅ 那是 plan 的職責；prompt 只給指向與約束
-- ❌ 交接後本 session 繼續改同一批檔案 → ✅ 交接即交棒
+- ❌ 交接後本 session 繼續改同一批檔案 → ✅ 交接即交棒（兩邊共用同一棵工作樹，同時改會互相覆蓋）
 - ❌ 用 ` ```bash ` 包裝交接 prompt → ✅ 用純文字 fenced block（避免被當成可執行指令）
