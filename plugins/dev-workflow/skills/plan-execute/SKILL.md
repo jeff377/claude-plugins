@@ -90,9 +90,9 @@ git diff --cached --name-only # 已暫存
 
 | 事項 | 歸屬 |
 |------|------|
-| CI 狀態輪詢與失敗分析 | 各 repo 的 CI 監測 command（如 `/ci-watch`） |
-| 測試撰寫規範、flaky 判別 | 各 repo 的 `rules/testing.md` |
-| commit 前的建置驗證 | 各 repo 的 hook（harness 強制，非 skill 能保證） |
+| CI 狀態輪詢與失敗分析 | 各 repo 自己的 CI 監測機制 |
+| 測試撰寫規範、flaky 判別 | 各 repo 自己的測試規範 |
+| commit 前的建置驗證 | 各 repo 自己的 hook（harness 強制，非 skill 能保證） |
 | plan 狀態列與階段表格格式 | `plan-write` |
 
 ---

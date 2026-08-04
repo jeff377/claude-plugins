@@ -57,15 +57,28 @@ session **共用同一棵工作樹**。兩邊同時改同一批檔案會互相�
 
 ## 交接前檢查（兩項，缺一不可）
 
-### 1. plan 的 git 狀態
+### 1. 把 plan 簽入（commit）
 
-**交接前把 plan commit 掉**，這是最穩的作法——新 session 可能開在 worktree（讀不到
-主工作樹的未 commit 內容），也可能共用主工作樹（讀得到，但 plan 會與實作改動混在同一批
-diff）。兩種情境下先 commit 都比較好。
+**交接的第一個動作就是把 plan commit 掉**，不是「詢問要不要 commit」。
+這是交接流程的一個步驟，不是一個選項——交接本身就是使用者對這個動作的授權。
 
-- 已 commit → prompt 寫 plan 路徑與 commit hash
-- 未 commit → **先問使用者要不要 commit**。若堅持不 commit，prompt 必須明寫
-  「plan 尚未 commit，位於主工作樹」，且該任務**不可開 worktree**
+理由：新 session 可能開在 worktree（**讀不到主工作樹的未 commit 內容**，會照著一份
+它打不開的 plan 動工且不報錯），也可能共用主工作樹（讀得到，但 plan 會與實作改動
+混在同一批 diff，之後難以分辨哪些是設計、哪些是實作）。兩種情境下先 commit 都較好。
+
+流程：
+
+1. `git status` 確認 plan 檔案狀態
+2. 未 commit（新增或已修改）→ **直接 commit**，訊息比照 repo 慣例
+   （多數 repo 為 `docs(plans): <plan 主題>`，摘要寫階段數與是否為破壞性變更）
+3. 已 commit → 取 commit hash
+4. prompt 的 git 區塊寫上 **plan 路徑 + commit hash + 目前分支**
+
+**唯一的例外**：使用者明確表示這次不要 commit。此時 prompt 必須明寫
+「plan 尚未 commit，位於主工作樹」，且該任務**不可開 worktree**（只能選 local only）。
+
+> 順帶檢查 plan 以外的相關檔案是否也該一併簽入——若實作 session 需要參照的
+> 樣板 / fixture / 設定檔還躺在工作區，worktree 裡同樣看不到。
 
 ### 2. plan 是否真的定案
 
@@ -130,8 +143,9 @@ git：<plan 與相關檔案的 commit 狀態、目前分支>
 - ❌ 因為「可能建 worktree」就整個不用 spawn task → ✅ 有這類工具就優先用，純 CLI 才退回可複製 prompt
 - ❌ prompt 沒交代工作樹 / 分支期望 → ✅ 明寫「在主工作樹的 main 上進行」或「適合開 worktree」，否則預設會開 worktree、與 prompt 裡的 git 指示打架
 - ❌ prompt 只寫「實作 docs/plans/plan-xxx.md」→ ✅ 補齊上表六個區塊
-- ❌ plan 未 commit 就交接、且未在 prompt 中說明 → ✅ 先問要不要 commit，
-  不 commit 也要明寫狀態
+- ❌ 停下來問「要不要先 commit plan？」→ ✅ **直接 commit**，那是交接流程的步驟不是選項；
+  只有使用者明確說不要時才走未 commit 路徑（並在 prompt 明寫狀態、禁用 worktree）
+- ❌ prompt 的 git 區塊只寫分支、沒寫 plan 的 commit hash → ✅ 兩者都寫
 - ❌ 把 plan 的設計理由複述進 prompt → ✅ 那是 plan 的職責；prompt 只給指向與約束
 - ❌ 交接後本 session 繼續改同一批檔案 → ✅ 交接即交棒（兩邊共用同一棵工作樹，同時改會互相覆蓋）
 - ❌ 用 ` ```bash ` 包裝交接 prompt → ✅ 用純文字 fenced block（避免被當成可執行指令）
