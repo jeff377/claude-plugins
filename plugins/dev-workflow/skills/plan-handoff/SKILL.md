@@ -1,14 +1,20 @@
 ---
 name: plan-handoff
-description: 把已定案的 plan 交接給新 session 實作 —— 整理出可直接複製的交接 prompt（plan 路徑、「設計已定案」封印、出貨與順序約束、未驗證項目、環境前置、git 狀態）。當使用者要「開新 session 實作這個 plan」、「開始實作了」、「把這個 plan 交出去做」、「另開 session 做這個」時使用。
+description: 把已定案的 plan 交接給新 session 接手下一步。**它規範的是流程不只是格式**：交接的第一個動作是把 plan commit（步驟，不是詢問），接著優先用 spawn task、否則輸出可複製 prompt，且 prompt 必須明寫工作樹與分支期望（worktree 或 local only），否則預設開的 worktree 會讀不到未 commit 的 plan。prompt 六個必備區塊：plan 路徑與 commit hash、「設計已定案」封印、出貨與順序約束、未驗證項目、環境前置、git 狀態。**不限程式碼實作**：撰寫文章、重構、遷移、資料處理、文件改版都適用；**plan 也不限放在 `docs/plans/`**。當使用者要「開新 session 實作／撰寫這個 plan」、「開新 session 寫 X」、「開始實作了」、「把這個 plan 交出去做」、「另開 session 做這個」、「交接給新 session」、「換 session 接手」時使用，**不論下一步是寫程式還是寫文章**。
 ---
 
-# 交接 plan 給實作 session
+# 交接 plan 給接手的 session
 
-擬定 plan 的 session 累積了大量討論脈絡，實作用不到；而實作要讀大量原始碼、跑測試，
-適合乾淨的 context。因此「plan 定案 → 換 session 實作」是常見且正確的切換點。
+擬定 plan 的 session 累積了大量討論脈絡，接手的人用不到；而動工那一端要讀大量原始碼、
+既有產出或參考資料，還要跑測試與查證，適合乾淨的 context。
+因此「plan 定案 → 換 session 動工」是常見且正確的切換點。
 
-本 skill 規範**交接時要輸出什麼**，以及**用哪種方式把它交出去**。
+**接手的不一定是寫程式。** 撰寫系列文章、批次遷移、資料清理、文件改版都適用；
+plan 也不限放在 `docs/plans/`。判別法只有一個：**下一步要不要換一個乾淨的 context 去做。**
+
+本 skill 規範**交接時要做哪些動作**、**要輸出什麼**，以及**用哪種方式把它交出去**。
+其中「先把 plan commit」與「prompt 必須明寫工作樹期望」是硬性步驟，
+不是可以憑記憶重現的格式範本。
 
 ---
 

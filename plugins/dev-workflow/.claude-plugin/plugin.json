@@ -1,7 +1,7 @@
 {
   "name": "dev-workflow",
-  "description": "開發流程慣例，與程式語言 / 框架無關：計畫文件（docs/plans/）的撰寫與格式、定案後交接給實作 session、實作期間的驗證閘門（plan 版本確認、範圍對帳、平行路徑檢查）。後續擴及 CI、源碼掃描與套件發佈等流程。",
-  "version": "2.2.2",
+  "description": "開發流程慣例，與程式語言 / 框架無關：計畫文件（docs/plans/）的撰寫與格式、定案後交接給接手的 session（不限程式碼實作）、實作期間的驗證閘門（plan 版本確認、範圍對帳、平行路徑檢查）。後續擴及 CI、源碼掃描與套件發佈等流程。",
+  "version": "2.2.3",
   "author": {
     "name": "jeff377",
     "email": "jeff377@gmail.com"
