@@ -5,7 +5,7 @@ description: 依照 docs/plans/ 下的計畫文件實作時的驗證閘門 —�
 
 # 依 plan 實作時的驗證閘門
 
-`plan-write` 管撰寫、`plan-handoff` 管交接，本 skill 管**執行期間**。
+`plan-write` 管撰寫、`session-handoff` 管交接，本 skill 管**執行期間**。
 
 三條規則，各自對應一種實際發生過、且事後才被發現的失誤。規則刻意少——
 每一條都要能指出「不做會怎樣」，做不到的就不該進來佔位。
