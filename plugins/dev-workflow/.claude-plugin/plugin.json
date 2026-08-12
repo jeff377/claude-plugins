@@ -1,7 +1,7 @@
 {
   "name": "dev-workflow",
-  "description": "開發流程慣例，與程式語言 / 框架無關：計畫文件（docs/plans/）的撰寫與格式、定案後交接給接手的 session（不限程式碼實作，交接文件也不限是 plan）、實作期間的驗證閘門（plan 版本確認、範圍對帳、平行路徑檢查）、Claude Code 設定檔語料的定期健檢。後續擴及 CI、源碼掃描與套件發佈等流程。",
-  "version": "2.5.0",
+  "description": "開發流程慣例，與程式語言 / 框架無關：計畫文件（docs/plans/）的撰寫與格式、定案後交接給接手的 session（不限程式碼實作，交接文件也不限是 plan）、實作期間的驗證閘門（plan 版本確認、範圍對帳、平行路徑檢查）、Claude Code 設定檔語料的定期健檢。CHANGELOG 草稿整理（依既有慣例偵測後沿用）。後續擴及 CI、源碼掃描與套件發佈等流程。",
+  "version": "2.6.0",
   "author": {
     "name": "jeff377",
     "email": "jeff377@gmail.com"

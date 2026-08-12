@@ -7,7 +7,7 @@
 
 | Plugin | 用途 | 內含 skill |
 |--------|------|-----------|
-| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢，後續擴及 CI、源掃、發佈），與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit` |
+| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢 / CHANGELOG 草稿，後續擴及 CI、源掃、發佈），與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit`、`changelog-draft` |
 
 ## 安裝（在要使用的 repo 內）
 
@@ -75,7 +75,9 @@ claude-plugins/
             │   └── SKILL.md
             ├── plan-execute/
             │   └── SKILL.md
-            └── config-audit/
+            ├── config-audit/
+            │   └── SKILL.md
+            └── changelog-draft/
                 └── SKILL.md
 ```
 
