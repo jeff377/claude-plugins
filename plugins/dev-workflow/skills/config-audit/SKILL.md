@@ -237,7 +237,27 @@ for k,v in d['plugins'].items():
    改了但沒 commit 一樣顯示新版，看起來像已經發布了。
 
 > 重開 app **不會**更新任何一層 —— 它只重讀註冊表。正確順序是
-> **commit + push → 到目標 repo 目錄下 `claude plugin update` → 完全重開 session**。
+> **commit + push → `claude plugin update`（user 與 project 兩次）→ 開一個新 session**。
+
+**「Restart to apply changes」指的是新開 session，不是重開整個行程**（實測 2026-08-12）。
+註冊表在 **session 啟動時**讀取，不是行程啟動時 —— 在既有的 Claude Code 行程裡開一個
+新 session，就會載到更新後的版本。當前 session 則不會熱更新，改到天亮也看不到。
+
+### 驗證載入了什麼：問 peer session，別急著開新的
+
+`ListAgents` 會列出這台機器上其他的 Claude session。**挑一個啟動時間晚於更新的，
+用 `SendMessage` 直接問它看得到哪些 skill** —— 它啟動時載入的東西就是答案。
+比起 `spawn_task`（需要使用者點擊）或 `claude -p`（另一個行程，且可能因 OAuth 過期而起不來），
+這是最輕的一條，且不需要任何人動手。
+
+問話要指定**可分辨版本的探針**，不要只問「有沒有更新」：
+
+- **新增的 skill 名**（只存在於新版）
+- **更名前後的兩個名字**（如 `plan-handoff` → `session-handoff`）—— 更名是最好的探針，
+  一眼分辨且不受描述改寫干擾
+
+並明講「照你 skill 清單裡實際寫的回我，不要去讀磁碟上的檔案」——
+否則對方可能去 `ls` cache 目錄，那回答的是磁碟狀態，不是它載入的狀態，題目就答錯了。
 
 ### 步驟 6 — 記憶
 
