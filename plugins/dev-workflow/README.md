@@ -12,9 +12,11 @@
 | `plan-write` | 計畫文件的狀態列格式、多階段階段表格、連結慣例（含「公開文件不得連結 plan」）、封存流程規範 |
 | `session-handoff` | 定案後交接給新 session 接手：交接 prompt 的必備內容與範本、遞送方式（優先 spawn task，純 CLI 退回可複製 prompt）。**不限程式碼實作，交接文件也不限是 plan** |
 | `plan-execute` | 實作期間的驗證閘門：plan 版本確認、範圍宣告與對帳、平行路徑檢查 |
+| `config-audit` | 設定檔語料（CLAUDE.md / rules / skills / commands / memory）的定期健檢：常駐 context 量測、失效引用、過期量化斷言、跨檔衝突、常駐 vs 按需錯置、plugin 版本漂移。產出分級報告，不自動改寫 |
 
-三者涵蓋一件工作的完整生命週期：撰寫（`plan-write`）→ 交接（`session-handoff`）→
-執行（`plan-execute`）。
+前三者涵蓋一件工作的完整生命週期：撰寫（`plan-write`）→ 交接（`session-handoff`）→
+執行（`plan-execute`）。`config-audit` 不在該生命週期上，它維護的是**下達這些流程的
+設定檔本身** —— 沒有任何機制會告訴你規則漂了，編譯器不看它、測試不跑它、CI 不驗它。
 
 ## 搭配 gate 使用（建議）
 
