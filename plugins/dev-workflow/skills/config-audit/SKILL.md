@@ -222,9 +222,16 @@ for k,v in d['plugins'].items():
 兩個必知的陷阱：
 
 1. **註冊表對同一個 plugin 會有多筆，user scope 與 project scope 各一。
-   project scope 覆蓋 user scope。** 在 A repo 裡跑 `claude plugin update` 只會更新
-   A 的那筆與 user 那筆 —— B repo 仍停在舊版，而且從 A 完全看不出來。
-   **要更新哪個 repo，就到那個 repo 目錄下跑更新。**
+   project scope 覆蓋 user scope。** `claude plugin update` **預設只更新 user scope**
+   （`--scope` 的 default 就是 `user`），即使你人在該 repo 目錄下也一樣 ——
+   輸出會明講 `at user scope`。project scope 必須顯式指定：
+
+   ```bash
+   claude plugin update <plugin>@<marketplace> --scope project   # 於目標 repo 目錄下執行
+   ```
+
+   兩者都要跑。其他 repo 的 project scope 不受影響，得各自到該 repo 下再跑一次 ——
+   而且從這個 repo 完全看不出來它們落後了，只有讀註冊表才知道。
 2. **開發 clone 有未 commit 的改動時，後面三個位置永遠拿不到。**
    健檢時第一個要看的是 `git status`，不是版本號 —— 版本號在 `plugin.json` 裡，
    改了但沒 commit 一樣顯示新版，看起來像已經發布了。
