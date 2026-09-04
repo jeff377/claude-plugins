@@ -1,6 +1,6 @@
 ---
 name: config-audit
-description: 定期健檢 Claude Code 設定檔語料（CLAUDE.md、rules/、skills/、commands/、hooks、plugin、memory）—— 量測常駐 context 成本、抓失效引用與過期量化斷言、偵測跨檔衝突、判定「常駐 vs 按需」錯置、檢查 skill description 觸發重疊與 plugin 版本漂移。核心判準是「這段會不會改變下一個 session 的行為」，不是「長不長」。當使用者要「整理 CLAUDE.md」、「精簡 rules」、「設定檔健檢」、「config audit」、「skill 太多太亂」、「context 太肥」、「規則互相衝突」、「定期整理 .claude」之類需求時使用。**產出分級報告供逐項確認，不自動改寫規則。**
+description: 定期健檢 Claude Code 設定檔語料（CLAUDE.md、rules/、skills/、commands/、hooks、plugin、memory）—— 量測常駐 context 成本、抓失效引用與過期量化斷言、偵測跨檔衝突、判定「常駐 vs 按需」錯置、檢查 skill description 觸發重疊、plugin 版本漂移，以及自有 marketplace 兩份資訊清單的一致性。核心判準是「這段會不會改變下一個 session 的行為」，不是「長不長」。當使用者要「整理 CLAUDE.md」、「精簡 rules」、「設定檔健檢」、「config audit」、「skill 太多太亂」、「context 太肥」、「規則互相衝突」、「定期整理 .claude」之類需求時使用。**產出分級報告供逐項確認，不自動改寫規則。**
 ---
 
 # Claude Code 設定檔健檢
@@ -386,6 +386,57 @@ for k,v in d['plugins'].items():
 **「Restart to apply changes」指的是新開 session，不是重開整個行程**（實測 2026-08-12）。
 註冊表在 **session 啟動時**讀取，不是行程啟動時 —— 在既有的 Claude Code 行程裡開一個
 新 session，就會載到更新後的版本。當前 session 則不會熱更新，改到天亮也看不到。
+
+### 步驟 5c — Plugin 資訊清單的兩份副本（自有 marketplace 才做）
+
+**同一份 plugin metadata 同時存在於兩個檔，而只有 `version` 有閘門。**
+
+`marketplace.json` 的 `plugins[]` 條目與該 plugin 的 `.claude-plugin/plugin.json`
+都可以帶 `name` / `description` / `version` 等欄位。Claude Code **只檢查 `version`**
+（錯誤訊息：`Version mismatch: plugin.json says "…". plugin.json wins at install time,
+so update the marketplace entry to "…"`）。**`description` 沒有任何檢查** ——
+改一邊忘了另一邊，不會有任何東西出聲。
+
+**不要用「省略 marketplace 的 description」來消除這份重複。** schema 上它確實是選填
+（plugin 條目只有 `name` 與 `source` 必填），但省略的後果不對稱（實測 2026-09-05）：
+
+| | 條目**有** description | 條目**省略** |
+|---|---|---|
+| 安裝前瀏覽（`plugin list --available --json`） | 顯示它 | **欄位根本不存在** |
+| 安裝後（`plugin details`） | 顯示它 | 回退到 `plugin.json` |
+
+安裝前那一格正是別人決定要不要裝的依據。
+
+**兩個欄位的結論相反，別一視同仁：**
+
+- **`version` 乾脆不要寫進 marketplace 條目。** 安裝時本來就是 `plugin.json` 說了算，
+  寫在條目裡只是製造一個會漂、且漂了會讓 Claude Code 報錯的副本。省略它 = 重複歸零。
+- **`description` 不能省**（省了就沒有安裝前的描述），所以只能靠**每次健檢比一次**：
+
+```bash
+MP=<marketplace-repo-path>
+python3 - "$MP/.claude-plugin/marketplace.json" <<'EOF'
+import json, io, os, sys
+mp = sys.argv[1]; root = os.path.dirname(os.path.dirname(mp))
+for e in json.load(io.open(mp, encoding='utf-8')).get('plugins', []):
+    src = e.get('source')
+    if not isinstance(src, str):          # 遠端來源的 plugin.json 不在本 repo，跳過
+        print(f"  ·  {e['name']}: 遠端來源，無法就地比對"); continue
+    pj = os.path.join(root, src, '.claude-plugin', 'plugin.json')
+    if not os.path.exists(pj):
+        print(f"  ⚠  {e['name']}: 找不到 {pj}"); continue
+    p = json.load(io.open(pj, encoding='utf-8'))
+    for f in ('version', 'description'):
+        if f not in e:
+            print(f"  ·  {e['name']}.{f}: marketplace 未寫" +
+                  ("（安裝前瀏覽看不到）" if f == 'description' else ""))
+        elif e[f] != p.get(f):
+            print(f"  ❌ {e['name']}.{f}: 兩份不一致")
+EOF
+```
+
+> 這條是踩出來的：2026-09-05 改了 `plugin.json` 的 description 卻沒動 `marketplace.json`，
+> 而兩者**在那之前就已經分岔**（少了一句，來自更早的一次改動）。沒有任何機制發現過。
 
 ### 驗證載入了什麼：問 peer session，別急著開新的
 
