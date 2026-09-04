@@ -1,6 +1,6 @@
 ---
 name: release
-description: .NET / NuGet repo 的發版流程 —— 前置條件檢查、版號判定（含 analyzer 擋不到的破壞性變更兩類自檢）、四個步驟（CHANGELOG、版號檔、PublicAPI.Unshipped→Shipped、commit+tag）、以及「push main 與 push tag 分兩次、中間停一下」的不可逆閘門。當使用者要「發版」、「發 vX.Y.Z」、「release」、「準備出版本」、「打 tag 發佈」、「上 NuGet」之類需求時使用。**agent 不自動推送 tag——那步必須由使用者明確同意。**
+description: .NET / NuGet repo 的發版流程 —— 前置條件檢查、版號判定（含 analyzer 擋不到的破壞性變更兩類自檢）、四個步驟（CHANGELOG、版號檔、出貨基準 Unshipped→Shipped —— repo 有 analyzer 時是兩份不是一份、commit+tag）、以及「push main 與 push tag 分兩次、中間停一下」的不可逆閘門。當使用者要「發版」、「發 vX.Y.Z」、「release」、「準備出版本」、「打 tag 發佈」、「上 NuGet」之類需求時使用。**agent 不自動推送 tag——那步必須由使用者明確同意。**
 ---
 
 # 發版流程（.NET / NuGet）
@@ -91,7 +91,18 @@ grep -rn "<舊版號>" --include="*.md" . \
 還是「當時量到什麼」？前者是複寫 → 改成指路（**不要改成新版號，那下次還會再漂**）；
 後者是紀錄 → 保留。
 
-### 3. `PublicAPI.Unshipped.txt` → `Shipped.txt`
+### 3. 出貨基準：Unshipped → Shipped
+
+**要搬的基準不一定只有一份。** 動手前先查這個 repo 有幾份：
+
+```bash
+find . -name 'PublicAPI.Unshipped.txt' -not -path '*/bin/*' -not -path '*/obj/*'
+find . -name 'AnalyzerReleases.Unshipped.md' -not -path '*/bin/*' -not -path '*/obj/*'
+```
+
+第二條有輸出，代表這個 repo 出貨 Roslyn analyzer，**3b 那一份也要搬**。
+
+#### 3a. `PublicAPI.Unshipped.txt` → `Shipped.txt`
 
 每個有異動的套件，把 Unshipped 併入 Shipped 並清空 Unshipped。**不能單純 append** ——
 Unshipped 有兩種語意相反的條目：`Foo.Bar() -> void` 是新增（加進 Shipped），
@@ -112,6 +123,36 @@ bash <本 skill 目錄>/scripts/merge-public-api-shipped.sh <last_tag>
 ```bash
 dotnet build <方案檔> -c Release --no-incremental
 ```
+
+#### 3b. `AnalyzerReleases.Unshipped.md` → `Shipped.md`（repo 出貨 analyzer 時）
+
+由 `Microsoft.CodeAnalysis.Analyzers` 的 release tracking 比對，角色與 `PublicAPI.*` 相同，
+格式則是 markdown 表格。把 Unshipped 的 `### New Rules` / `### Removed Rules` /
+`### Changed Rules` 各節，整併成 Shipped 檔尾的一個新版本節，再把 Unshipped 清回只剩檔頭註解：
+
+```markdown
+## Release x.y.z
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|------
+（從 Unshipped 原樣搬過來，不要改寫 Notes）
+```
+
+**沒有腳本，也不需要寫一支** —— 每次要搬的通常只有幾條，而機械改寫 markdown 區段的風險
+比手搬高。
+
+**漏搬不會有任何訊號，這是它與 3a 最大的差別。** `PublicAPI` 漏搬會在下次 build 被
+`RS0016` 擋下（成員又成了未申報）；analyzer 這邊不會 —— 規則永遠停在 Unshipped，build
+照樣是綠的。代價在另一頭：**`RS2003`（已出貨規則消失卻未申報移除）對空的 Shipped 檔
+完全不可能觸發**，所以只要這一步從第一版就沒做過，「規則被悄悄退役」這一半的保護等於
+不存在。
+
+> 這不是假想。實際踩過：某 repo 的 `Shipped.md` 從建立起一行都沒有，而 analyzer 早已
+> 隨套件出貨十幾個 minor；期間有四條規則在某一版被退役，**沒有任何東西出聲**，直到
+> 全面盤點才發現。回填後負向驗證即可確認盲點關上 —— 改掉一條已出貨規則的 id，
+> `RS2003` 就該擋下來。
 
 ### 4. commit + tag
 
