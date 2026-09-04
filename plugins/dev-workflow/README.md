@@ -1,6 +1,7 @@
 # dev-workflow
 
-開發流程慣例，與程式語言 / 框架無關，適用任何以 `docs/plans/` 管理計畫的 repo。
+開發流程慣例。除 `release`（**.NET / NuGet 專屬**）外，其餘 skill 與程式語言 / 框架無關；
+其中 `plan-write` / `plan-execute` 另假設該 repo 以 `docs/plans/` 管理計畫。
 
 範圍不限於計畫文件——凡「與特定專案無關的開發流程紀律」都收在此：
 計畫的撰寫、執行與交接，後續擴及 CI 驗證、源碼掃描、套件發佈等。
@@ -13,10 +14,15 @@
 | `session-handoff` | 定案後交接給新 session 接手：交接 prompt 的必備內容與範本、遞送方式（優先 spawn task，純 CLI 退回可複製 prompt）。**不限程式碼實作，交接文件也不限是 plan** |
 | `plan-execute` | 實作期間的驗證閘門：plan 版本確認、範圍宣告與對帳、平行路徑檢查 |
 | `config-audit` | 設定檔語料（CLAUDE.md / rules / skills / commands / memory）的定期健檢：常駐 context 量測、失效引用、過期量化斷言、跨檔衝突、常駐 vs 按需錯置、plugin 版本漂移。產出分級報告，不自動改寫 |
+| `changelog-draft` | 自上一版 tag 至 HEAD 整理 CHANGELOG：依 Conventional Commits 分類、建議版號、產草稿供 review。先偵測該 repo 既有慣例（單語 / 雙語、單層 / 兩層明細）再沿用，不強加格式 |
+| `release` | **.NET / NuGet 專屬**：前置條件檢查、版號判定（含 analyzer 擋不到的破壞性變更自檢）、四個步驟（CHANGELOG / 版號檔 / 出貨基準 Unshipped→Shipped / commit+tag）、以及 push main 與 push tag 分兩次的不可逆閘門 |
 
 前三者涵蓋一件工作的完整生命週期：撰寫（`plan-write`）→ 交接（`session-handoff`）→
 執行（`plan-execute`）。`config-audit` 不在該生命週期上，它維護的是**下達這些流程的
 設定檔本身** —— 沒有任何機制會告訴你規則漂了，編譯器不看它、測試不跑它、CI 不驗它。
+
+`changelog-draft` 與 `release` 屬另一條線：把已完成的工作出成版本。前者與語言無關（它偵測
+該 repo 的既有慣例再沿用），後者是本 plugin 目前**唯一綁定技術棧**的 skill。
 
 ## 搭配 gate 使用（建議）
 

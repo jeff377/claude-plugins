@@ -7,7 +7,7 @@
 
 | Plugin | 用途 | 內含 skill |
 |--------|------|-----------|
-| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢 / CHANGELOG 草稿 / 發版），與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit`、`changelog-draft`、`release` |
+| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢 / CHANGELOG 草稿 / 發版）。除 `release` 外與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit`、`changelog-draft`、`release`（**.NET / NuGet 專屬**） |
 
 ## 安裝（在要使用的 repo 內）
 
