@@ -117,6 +117,57 @@ grep -hoE '^@[A-Za-z0-9~./_-]+' .claude/CLAUDE.md ~/.claude/CLAUDE.md 2>/dev/nul
 | while read -r p; do q="${p/#\~/$HOME}"; [ -e "$q" ] || [ -e ".claude/$p" ] || echo "MISSING import: $p"; done
 ```
 
+#### 型別與成員：路徑掃描驗不到的那一半
+
+上面那道只驗「含 `/` 的檔案路徑」。**規則裡點名的型別與成員一樣會失效，而且更難察覺** ——
+路徑失效時整個檔案不見，成員失效時型別還在原地，只有那個成員沒了。
+
+> **實例（2026-09-05）**：某規則叫 agent 去 `ApiPayloadOptionsFactory.CreateSerializer`
+> 查可用清單，而該成員已於前一版移除。路徑掃描全綠，這筆是**手動查符號才找到的**，
+> 判為該次健檢唯一的 P0。
+
+```bash
+ROOTS="src tests tools"                       # 依 repo 調整
+CORPUS=$(mktemp)
+grep -rh --include='*.cs' -v -E '^[[:space:]]*(//|\*)' $ROOTS > "$CORPUS"   # 剝掉整行註解
+grep -rhoE '`[A-Z][A-Za-z0-9_]+\.[A-Z][A-Za-z0-9_]+`' \
+     .claude/rules/ .claude/CLAUDE.md ~/.claude/rules/ ~/.claude/CLAUDE.md 2>/dev/null \
+| tr -d '`' | sort -u | while read -r sym; do
+    base="${sym%%.*}"; mem="${sym#*.}"
+    grep -rqE "(class|interface|enum|struct|record) +${base}\b" $ROOTS --include='*.cs' 2>/dev/null || continue
+    grep -qE "\b${mem}\b" "$CORPUS" || echo "  ❌ $sym —— 型別 $base 在，但剝掉註解後找不到成員 $mem"
+done
+rm -f "$CORPUS"
+```
+
+（`(class|interface|enum|struct|record)` 與 `--include='*.cs'` 是 C# 的形狀，
+換語言時改這兩處，其餘邏輯不變。）
+
+設計要點（**三條都是踩出來的，別簡化**）：
+
+- **拆成型別與成員分別驗，不要拿點號全名去 grep 原始碼。** `X.CreateSerializer` 這種全名
+  在 `.cs` 裡**從不字面出現**（宣告處只有成員名），直接 grep 全名會把**每一筆**都報成失效。
+- **比對前必須剝掉註解行。** 「註解記載某成員刻意不存在」與「該成員真的存在」在純文字
+  比對下**完全相同** —— 第一版就是這樣被騙過去的：原始碼有一句
+  `/// NOTE: there is deliberately no <c>CreateSerializer</c> here.`，裸 grep 命中 1 筆、
+  判定「還在」，而它其實已被移除。`^[[:space:]]*(//|\*)` 一次蓋掉 `//`、`///` 與 block
+  comment 的續行；要更嚴就改成只比對宣告。
+- **成員首字限定大寫**（`\.[A-Z]`）。放寬成 `\.[A-Za-z]` 會把**副檔名**當成員：
+  `Foo.cs`、`README.md`、`Version.props`、`SystemSettings.xml` 全部進候選。
+  公開成員本來就是 PascalCase，這條濾網不花成本。
+
+**型別找不到就跳過，不要報。** 命名空間片段（`Bee.Definition`）與 `Type.Member` 在 regex
+下長得一模一樣，靠「型別宣告存不存在」這道閘門隔開；把跳過的也報出來就是滿屏誤報。
+
+已知的兩個方向，判讀時知道即可，**都不必修**：
+
+| 方向 | 樣態 | 判法 |
+|------|------|------|
+| **誤報** | 佔位符 / 家族通稱，如 `ValueUtilities.Cxxx` 指的是一整族方法而非某個成員 | 看得出不是實際成員名就略過 |
+| **漏報** | 成員名在別處也是常見字（`Serializer`、`Id`、`Save`），另一個型別有同名成員就掩護過去 | 這道檢查只保證「報出來的值得查」，不保證抓全 |
+
+> 實測（bee-library，2026-09-05）：40 個候選 → 2 筆命中（1 真 1 誤報），約 11 秒。
+
 ### 步驟 2 — 過期的量化斷言（機械偵測 + 實際重跑）
 
 **寫得越具體的宣稱，過期得越快。** 「目前有 28 處 `[Collection]`」「兩者皆零使用」
@@ -266,14 +317,74 @@ BO / Repository / UI 的作者，所以它**必須留常駐**。
 
 ### 步驟 5 — Skill / Command / Plugin 健檢
 
+**description 必須解析 frontmatter 取完整值，不能 `grep -m1 '^description:'`** ——
+YAML 的折疊 / 字面字串（`description: >` 或 `|`，內容在後續縮排行）會讓 grep 只抓到
+`description: >` 那一行，量出十幾個字。**量錯的後果不是少了精度，是判斷整個反過來**：
+一支 500 字的 description 會被量成 15 字，於是「該不該壓縮」問不出來，還會被誤讀成
+frontmatter 壞掉（實測 2026-09-05，差點把一支正常的 skill 報成缺欄位）。
+
 ```bash
-for d in .claude/skills/*/ ~/.claude/skills/*/; do
-  [ -e "$d/SKILL.md" ] || { echo "缺 SKILL.md: $d"; continue; }
-  n=$(grep -m1 '^name:' "$d/SKILL.md" | sed 's/^name: *//')
-  [ "$n" = "$(basename $d)" ] || echo "name 與目錄名不符: $d (name=$n)"
-  printf "%5d 字描述  %s\n" "$(grep -m1 '^description:' "$d/SKILL.md" | wc -c)" "$(basename $d)"
-done | sort -rn
+python3 - .claude/skills ~/.claude/skills <<'EOF'
+import io, os, sys
+
+BLOCK = ('>', '>-', '>+', '|', '|-', '|+')
+
+def frontmatter_description(path):
+    """回傳 (description, 錯誤訊息)；支援單行、折疊(>)、字面(|) 與縮排延續行。"""
+    lines = io.open(path, encoding='utf-8').read().split('\n')
+    if not lines or lines[0].strip() != '---':
+        return None, '無 frontmatter'
+    try:
+        end = lines.index('---', 1)
+    except ValueError:
+        return None, 'frontmatter 未閉合'
+    fm = lines[1:end]
+    for i, ln in enumerate(fm):
+        if not ln.startswith('description:'):
+            continue
+        head = ln[len('description:'):].strip()
+        parts = [] if head in BLOCK else ([head] if head else [])
+        for cont in fm[i + 1:]:
+            if cont.strip() == '':
+                continue
+            if cont[:1] in (' ', '\t'):      # 縮排 = 同一個 scalar 的延續
+                parts.append(cont.strip())
+            else:                            # 回到頂層 = 下一個 key
+                break
+        return ' '.join(parts), None
+    return None, '缺 description'
+
+def frontmatter_name(path):
+    for ln in io.open(path, encoding='utf-8'):
+        if ln.startswith('name:'):
+            return ln[len('name:'):].strip()
+    return None
+
+rows = []
+for root in sys.argv[1:]:
+    root = os.path.expanduser(root)
+    if not os.path.isdir(root):
+        continue
+    for d in sorted(os.listdir(root)):
+        if not os.path.isdir(os.path.join(root, d)):   # README.md 之類非 skill 目錄
+            continue
+        sk = os.path.join(root, d, 'SKILL.md')
+        if not os.path.exists(sk):
+            print('缺 SKILL.md: %s' % os.path.join(root, d)); continue
+        n = frontmatter_name(sk)
+        if n != d:
+            print('name 與目錄名不符: %s (name=%s)' % (sk, n))
+        desc, err = frontmatter_description(sk)
+        if err:
+            print('%s: %s' % (sk, err)); continue
+        rows.append((len(desc), d, root))
+
+for chars, d, root in sorted(rows, reverse=True):
+    print('%5d 字  %-40s %s' % (chars, d, root))
+EOF
 ```
+
+> 長度以**字元**計（`len`），不是位元組 —— 舊版用 `wc -c`，中文描述會被高估三倍。
 
 檢查項：
 
@@ -371,11 +482,43 @@ for k,v in d['plugins'].items():
    輸出會明講 `at user scope`。project scope 必須顯式指定：
 
    ```bash
-   claude plugin update <plugin>@<marketplace> --scope project   # 於目標 repo 目錄下執行
+   cd <目標 repo>                                                # ← 不是選配，見下方警告
+   claude plugin update <plugin>@<marketplace> --scope project
    ```
 
    兩者都要跑。其他 repo 的 project scope 不受影響，得各自到該 repo 下再跑一次 ——
    而且從這個 repo 完全看不出來它們落後了，只有讀註冊表才知道。
+
+   > ⚠️ **`--scope project` 跑錯目錄不會失敗，它會成功地更新別的 repo。**
+   > 「project」指的是**當前工作目錄所屬的那個 repo**，不是你心裡想的那個。在 `/tmp`
+   > 或另一個 repo 下執行，指令照樣回綠燈，只是括號裡的 `projectPath` 是別人的：
+   >
+   > ```
+   > ✔ Plugin "dev-workflow" updated from 2.5.0 to 2.11.0 for scope project
+   >   (/Users/…/另一個 repo)        ← 目標那筆原封不動仍是 2.5.0
+   > ```
+   >
+   > 實測 2026-09-05。**這是「回報成功、目標沒動」，比失敗更難察覺** ——
+   > 失敗至少會讓你回頭看，綠燈只會讓你收工。
+
+   **因此更新後必須驗證，而且驗證的對象是註冊表裡 `projectPath` 等於目標 repo 的那一筆，
+   不是指令輸出。** 沿用上面那段讀註冊表的 python，加上目標路徑過濾：
+
+   ```bash
+   TARGET=<目標 repo 絕對路徑>; PLUGIN=<plugin-name>
+   python3 -c "
+   import json, os, sys
+   target, plugin = sys.argv[1], sys.argv[2]
+   d = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
+   hit = [e for e in d['plugins'].get(plugin, []) if e.get('projectPath') == target]
+   if not hit:
+       print('❌ 註冊表沒有 projectPath=%s 的 %s —— 更新打到別的 repo 去了' % (target, plugin))
+   for e in hit:
+       print('scope=%s ver=%s %s' % (e.get('scope'), e.get('version'), e.get('projectPath')))
+   " "$TARGET" "$PLUGIN"
+   ```
+
+   版本沒變就是更新打到別處了，回到目標 repo 目錄再跑一次。
 2. **開發 clone 有未 commit 的改動時，後面三個位置永遠拿不到。**
    健檢時第一個要看的是 `git status`，不是版本號 —— 版本號在 `plugin.json` 裡，
    改了但沒 commit 一樣顯示新版，看起來像已經發布了。
@@ -529,6 +672,8 @@ EOF
 | 沒有基線就開始砍 | 沒有前後數字，無從判斷這次健檢有沒有用 |
 | 在報告裡建目錄 / 改結構 | 結構決策要先提議、經確認 |
 | 把列舉成員 / API 簽章 / 腳本行為抄一份進規則 | 那些有權威來源，複寫必漂而且沒有機制會發現 |
+| 拿 `Type.Member` 全名去 grep 原始碼 | 全名在程式碼裡從不字面出現，會把每一筆都報成失效 |
+| 沒剝註解就 grep 成員名 | 「刻意不存在」的註解會冒充成「成員還在」，掃描全綠但規則早已失效 |
 | 沒驗機制就把規則搬進子目錄 `CLAUDE.md` | 若它不是 lazy loading，規則會**靜默失效**、不報錯 |
 | 搬完不驗目標檔真的承接了 | 空指路看起來已處理好，比留著原文更糟 |
 | 動使用者層設定前沒確認有版控 | `~/.claude` 常常不是 git repo，改壞就找不回來 |
