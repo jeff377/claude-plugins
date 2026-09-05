@@ -127,14 +127,15 @@ grep -hoE '^@[A-Za-z0-9~./_-]+' .claude/CLAUDE.md ~/.claude/CLAUDE.md 2>/dev/nul
 > 判為該次健檢唯一的 P0。
 
 ```bash
-ROOTS="src tests tools"                       # 依 repo 調整
+set -- src tests tools                        # 依 repo 調整（用 set -- 而非變數，見下方第 4 點）
 CORPUS=$(mktemp)
-grep -rh --include='*.cs' -v -E '^[[:space:]]*(//|\*)' $ROOTS > "$CORPUS"   # 剝掉整行註解
+grep -rh --include='*.cs' -v -E '^[[:space:]]*(//|\*)' "$@" > "$CORPUS"     # 剝掉整行註解
+[ -s "$CORPUS" ] || { echo "⚠ 語料是空的 —— cwd / ROOTS / grep 有問題，這次掃描不算數"; rm -f "$CORPUS"; exit 1; }
 grep -rhoE '`[A-Z][A-Za-z0-9_]+\.[A-Z][A-Za-z0-9_]+`' \
      .claude/rules/ .claude/CLAUDE.md ~/.claude/rules/ ~/.claude/CLAUDE.md 2>/dev/null \
 | tr -d '`' | sort -u | while read -r sym; do
     base="${sym%%.*}"; mem="${sym#*.}"
-    grep -rqE "(class|interface|enum|struct|record) +${base}\b" $ROOTS --include='*.cs' 2>/dev/null || continue
+    grep -rqE "(class|interface|enum|struct|record) +${base}\b" "$@" --include='*.cs' 2>/dev/null || continue
     grep -qE "\b${mem}\b" "$CORPUS" || echo "  ❌ $sym —— 型別 $base 在，但剝掉註解後找不到成員 $mem"
 done
 rm -f "$CORPUS"
@@ -155,6 +156,13 @@ rm -f "$CORPUS"
 - **成員首字限定大寫**（`\.[A-Z]`）。放寬成 `\.[A-Za-z]` 會把**副檔名**當成員：
   `Foo.cs`、`README.md`、`Version.props`、`SystemSettings.xml` 全部進候選。
   公開成員本來就是 PascalCase，這條濾網不花成本。
+- **根目錄用 `set --` + `"$@"` 傳，不要用 `ROOTS="src tests tools"` + 裸 `$ROOTS`。**
+  **zsh 預設不對未加引號的變數做 word splitting**，那樣寫會把三個目錄當成單一路徑
+  `"src tests tools"`，只印一行 `No such file or directory` 就**輸出空白** ——
+  看起來像全綠，實際一個檔都沒掃到。`set --` 在 bash 與 zsh 下行為一致。
+  **`[ -s "$CORPUS" ]` 那道護欄就是為此而設**，且它同時擋掉 cwd 跑錯、`ROOTS` 填錯、
+  `grep` 被 shell function 攔截（實測撞過 ugrep）等所有「語料是空的」情形。
+  **這道檢查本身也適用「掃描全綠 ≠ 沒問題」** —— 沒有護欄的空掃描與真的乾淨長得一模一樣。
 
 **型別找不到就跳過，不要報。** 命名空間片段（`Bee.Definition`）與 `Type.Member` 在 regex
 下長得一模一樣，靠「型別宣告存不存在」這道閘門隔開；把跳過的也報出來就是滿屏誤報。
