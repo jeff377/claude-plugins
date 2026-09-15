@@ -1,6 +1,6 @@
 ---
 name: plan-execute
-description: 依照 docs/plans/ 下的計畫文件實作時的驗證閘門 —— 動筆前確認 plan 是最新已 commit 版本（不用 session 早期讀過的快取）、宣告受影響檔案清單並於階段結束對帳、改完檢查是否存在未同步的平行實作路徑。當使用者要「實作這個 plan」、「執行 plan」、「照 plan 做」、「開始做階段 X」，或你即將依據某份 plan 動手改任何原始碼時使用。
+description: 依照計畫文件（預設 docs/plans/，以 repo 約定為準）實作時的驗證閘門 —— 動筆前確認 plan 是最新版本（入版控的 plan 以 git 為準；gitignored 的 plan 重新讀檔，不用 session 早期讀過的快取）、宣告受影響檔案清單並於階段結束對帳、改完檢查是否存在未同步的平行實作路徑。當使用者要「實作這個 plan」、「執行 plan」、「照 plan 做」、「開始做階段 X」，或你即將依據某份 plan 動手改任何原始碼時使用。
 ---
 
 # 依 plan 實作時的驗證閘門
@@ -30,6 +30,14 @@ git show HEAD:<plan 路徑> | diff - <plan 路徑>   # 已 commit 版本 vs 工�
 | 工作區有未 commit 的修改 | **停下確認**——問使用者這些修改是否為定案內容 |
 | 本機落後 remote | **停下確認**——`git fetch` 後比對，可能有你沒看到的修訂 |
 | plan 檔案根本未 commit | 明確告知使用者，確認這就是要實作的版本 |
+
+**plan 位於 gitignored 目錄時**（repo 約定把計畫目錄設為 `local/plans/` 這類目錄，見 `plan-write`），
+上面的 git 指令不適用：它會永遠落在「未 commit」那一列，每次停下來問，問了也得不到新資訊。
+
+1. 先用 `git check-ignore -v <plan 路徑>` 確認它**確實被忽略**，而不是忘了 commit。
+   沒有輸出就是後者，回到上表處理。**不要用 `git status` 判斷**——被忽略的檔案不會出現在輸出裡。
+2. 確認被忽略後，動筆前**重新讀檔**，不用 session 早期讀進 context 的版本（這條的用意不變）。
+3. 不 commit，也絕不 `git add -f`。
 
 **為什麼**：曾發生依據一份未 push 的舊版 plan 實作整個 session，
 發現時只能全數 revert。plan 的內容會在討論中反覆修訂，
@@ -100,7 +108,8 @@ git diff --cached --name-only # 已暫存
 ## 常見錯誤
 
 - ❌ 用 session 早期讀進 context 的 plan 版本動工 → ✅ 動筆前以 git 重新確認
-- ❌ 發現 plan 未 commit 仍逕自實作 → ✅ 停下確認這是否為定案版本
+- ❌ 發現 plan 未 commit 仍逕自實作 → ✅ 停下確認這是否為定案版本（gitignored 的 plan 除外，見下一條）
+- ❌ plan 在 gitignored 目錄，卻照 git 檢查表每次停下來問 → ✅ `git check-ignore -v` 確認後改為重新讀檔
 - ❌ 完成後才第一次列出改了哪些檔 → ✅ 動筆前先宣告，結束時對帳
 - ❌ 「順手」改了宣告外的檔案且未提 → ✅ 超出範圍逐項說明
 - ❌ 改完一條路徑就宣告完成 → ✅ 先搜尋平行路徑，確認無漏

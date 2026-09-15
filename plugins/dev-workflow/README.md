@@ -1,7 +1,8 @@
 # dev-workflow
 
 開發流程慣例。除 `release`（**.NET / NuGet 專屬**）外，其餘 skill 與程式語言 / 框架無關；
-其中 `plan-write` / `plan-execute` 另假設該 repo 以 `docs/plans/` 管理計畫。
+其中 `plan-write` / `plan-execute` 預設計畫放在 `docs/plans/`，repo 的 `CLAUDE.md` 可指定其他目錄
+（例如多人維護的 repo 常用、不入版控的 `local/plans/`）。
 
 範圍不限於計畫文件——凡「與特定專案無關的開發流程紀律」都收在此：
 計畫的撰寫、執行與交接，後續擴及 CI 驗證、源碼掃描、套件發佈等。
@@ -43,6 +44,10 @@
 
 > 狀態列格式、階段表格、連結慣例、封存細節 → 見 `/dev-workflow:plan-write`。
 ```
+
+計畫不入版控的 repo（多人維護、plan 只是個人工作文件），把第 1、5 點的路徑換成 gitignored 目錄
+（例如 `local/plans/`、`local/plans/archive/`），並加一句「計畫目錄不入版控：不 commit、不 `git add -f`」。
+三支 skill 會依這段宣告改用該目錄，並跳過以 commit 為前提的步驟。
 
 gate（常駐、擋關）與 skill（按需、給格式）分工，是本 plugin 的設計前提。
 

@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: 把已定案的工作交接給新 session 接手下一步。**它規範的是流程不只是格式**：交接的第一個動作是把交接文件 commit（步驟，不是詢問），接著優先用 spawn task、否則輸出可複製 prompt，且 prompt 必須明寫工作樹與分支期望（worktree 或 local only），否則預設開的 worktree 會讀不到未 commit 的檔案。prompt 的必備區塊：交接文件路徑與 commit hash、「設計已定案」封印、出貨與順序約束、未驗證項目、環境前置、git 狀態、回報對象 session（做完把狀況送回哪裡）。**不限程式碼實作**：撰寫文章、重構、遷移、資料處理、文件改版都適用；**交接文件不限是 `docs/plans/` 的 plan**，可以是規格、規範文件組、或連載系列的大綱＋逐篇筆記＋寫作規則。當使用者要「開新 session 實作／撰寫這個 plan」、「開新 session 寫 X」、「接下來開新 session 寫下一篇」、「接著寫」、「開始實作了」、「把這個交出去做」、「另開 session 做這個」、「交接給新 session」、「換 session 接手」時使用，**不論下一步是寫程式還是寫文章、也不論有沒有一份叫 plan 的檔案**。
+description: 把已定案的工作交接給新 session 接手下一步。**它規範的是流程不只是格式**：交接的第一個動作是把交接文件 commit（步驟，不是詢問；交接文件在 gitignored 目錄時例外：不 commit、絕不 git add -f、只能 local only），接著優先用 spawn task、否則輸出可複製 prompt，且 prompt 必須明寫工作樹與分支期望（worktree 或 local only），否則預設開的 worktree 會讀不到未 commit 的檔案。prompt 的必備區塊：交接文件路徑與 commit hash、「設計已定案」封印、出貨與順序約束、未驗證項目、環境前置、git 狀態、回報對象 session（做完把狀況送回哪裡）。**不限程式碼實作**：撰寫文章、重構、遷移、資料處理、文件改版都適用；**交接文件不限是 `docs/plans/` 的 plan**，可以是規格、規範文件組、或連載系列的大綱＋逐篇筆記＋寫作規則。當使用者要「開新 session 實作／撰寫這個 plan」、「開新 session 寫 X」、「接下來開新 session 寫下一篇」、「接著寫」、「開始實作了」、「把這個交出去做」、「另開 session 做這個」、「交接給新 session」、「換 session 接手」時使用，**不論下一步是寫程式還是寫文章、也不論有沒有一份叫 plan 的檔案**。
 ---
 
 # 交接工作給接手的 session
@@ -14,7 +14,7 @@ description: 把已定案的工作交接給新 session 接手下一步。**它�
 **也不一定有一份叫 plan 的檔案。** 本 skill 統稱新 session 必須先讀的東西為**交接文件**，
 它可以是：
 
-- `docs/plans/` 下的一份 plan（最常見）
+- 計畫目錄下的一份 plan（最常見；目錄預設 `docs/plans/`，以 repo 約定為準，見 `plan-write`）
 - 放在別處的規格或設計文件
 - **一組文件**——例如連載系列的大綱 + 逐篇筆記 + 寫作規則，三份都要讀
 - 甚至沒有文件，只有一段口頭定案的需求（此時 prompt 本身就是交接文件，
@@ -94,14 +94,22 @@ session **共用同一棵工作樹**。兩邊同時改同一批檔案會互相�
 
 流程：
 
-1. `git status` 確認交接文件的狀態。**交接文件是一組時，每一份都要確認**
+1. 先用 `git check-ignore -v <路徑>` 判斷交接文件是否在 gitignored 目錄（有輸出就是，走下方例外 1），
+   再用 `git status` 確認其餘狀態。**不能只看 `git status`**——被忽略的檔案不會出現在輸出裡，
+   看起來跟「已 commit、無修改」一模一樣。**交接文件是一組時，每一份都要確認**
 2. 未 commit（新增或已修改）→ **直接 commit**，訊息比照 repo 慣例
    （plan 類多為 `docs(plans): <主題>`，摘要寫階段數與是否為破壞性變更）
 3. 已 commit → 取 commit hash
 4. prompt 的 git 區塊寫上 **文件路徑 + commit hash + 目前分支**
 
-**唯一的例外**：使用者明確表示這次不要 commit。此時 prompt 必須明寫
-「交接文件尚未 commit，位於主工作樹」，且該任務**不可開 worktree**（只能選 local only）。
+**例外只有兩個**：
+
+1. **交接文件位於 gitignored 目錄**（例如 repo 約定的 `local/plans/`）：**不 commit，也絕不 `git add -f`**。
+   gitignore 是該 repo 的決定，強制加入等於把不公開的文件推進版控——而「交接本身就是授權」
+   不涵蓋這件事。prompt 的 git 區塊寫明「交接文件位於 gitignored 目錄 <路徑>，不入版控」，
+   並依上方規定只能走 local only、在 prompt 開頭寫明原因。
+2. **使用者明確表示這次不要 commit**。此時 prompt 必須明寫
+   「交接文件尚未 commit，位於主工作樹」，且該任務**不可開 worktree**（只能選 local only）。
 
 > 順帶檢查交接文件以外的相關檔案是否也該一併簽入——若新 session 需要參照的
 > 樣板 / fixture / 設定檔 / 既有產出還躺在工作區，worktree 裡同樣看不到。
@@ -242,8 +250,10 @@ git：<交接文件與相關檔案的 commit 狀態、目前分支；多個 repo
 - ❌ 有人在等這份狀況、prompt 卻沒寫回報對象 → ✅ 寫進 prompt，接手方才不必回頭問使用者
 - ❌ 回報對象只記 `[ref]` → ✅ 記**名稱**加錨點；ref 過一段時間就解析不出來
 - ❌ 停下來問「要不要先 commit？」→ ✅ **直接 commit**，那是交接流程的步驟不是選項；
-  只有使用者明確說不要時才走未 commit 路徑（並在 prompt 明寫狀態、禁用 worktree）
-- ❌ prompt 的 git 區塊只寫分支、沒寫 commit hash → ✅ 兩者都寫
+  只有交接文件在 gitignored 目錄、或使用者明確說不要時才走未 commit 路徑（並在 prompt 明寫狀態、禁用 worktree）
+- ❌ 交接文件在 gitignored 目錄，`git status` 沒列出就當成已 commit，或用 `git add -f` 硬加 →
+  ✅ `git check-ignore -v` 確認後不 commit，prompt 寫明「不入版控」並只能 local only
+- ❌ prompt 的 git 區塊只寫分支、沒寫 commit hash → ✅ 兩者都寫（gitignored 的交接文件以「不入版控」代替 hash）
 - ❌ 工作區有別人的在途改動卻沒寫進 prompt → ✅ 逐一列出並要求不要碰、不要 `git add -A`
 - ❌ 把設計理由複述進 prompt → ✅ 那是文件的職責；prompt 只給指向與約束
 - ❌ 交接後本 session 繼續改同一批檔案 → ✅ 交接即交棒（共用工作樹時同時改會互相覆蓋）

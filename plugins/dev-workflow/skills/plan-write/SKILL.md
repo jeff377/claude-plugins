@@ -1,14 +1,30 @@
 ---
 name: plan-write
-description: 撰寫 / 更新 docs/plans/ 下的計畫文件 —— 狀態列格式（✅ 已完成 / 🚧 進行中 / 📝 擬定中 + ISO 日期）、多階段 plan 的階段表格（階段 / 範圍 / 狀態）、整體狀態與階段狀態的對應規則、plan 內外的連結慣例（含「公開文件不得連結 plan」）、封存流程與封存目錄約定。當使用者要「寫一份 plan」、「擬計畫」、「更新 plan 狀態」、「標記 plan 完成」、「封存 plan」，或你即將建立 / 修改 docs/plans/ 下任何文件、或要在 README / ADR / 對外文件裡引用 plan 時使用。
+description: 撰寫 / 更新計畫文件（預設 docs/plans/，repo 的 CLAUDE.md 可另指定，例如 gitignored 的 local/plans/）—— 計畫目錄的判定、狀態列格式（✅ 已完成 / 🚧 進行中 / 📝 擬定中 + ISO 日期）、多階段 plan 的階段表格（階段 / 範圍 / 狀態）、整體狀態與階段狀態的對應規則、plan 內外的連結慣例（含「公開文件不得連結 plan」）、封存流程與封存目錄約定。當使用者要「寫一份 plan」、「擬計畫」、「更新 plan 狀態」、「標記 plan 完成」、「封存 plan」，或你即將建立 / 修改計畫目錄下任何文件、或要在 README / ADR / 對外文件裡引用 plan 時使用。
 ---
 
 # 撰寫 plan 文件
 
-`docs/plans/` 下計畫文件的格式規範。計畫本身的內容（背景、步驟、取捨）依任務而定，
+計畫文件的格式規範。計畫本身的內容（背景、步驟、取捨）依任務而定，
 本 skill 只規範**狀態標記與階段表格的寫法**，讓後續不需回查程式碼或 commits 即可掃讀進度。
 
 檔名格式：`plan-<主題>.md`。
+
+## plan 放在哪裡
+
+**先看該 repo 的 `CLAUDE.md`（或 CONTRIBUTING）有沒有指定計畫目錄：有就照它，沒寫才用 `docs/plans/`。**
+本文以下寫到 `docs/plans/` 的地方，一律代換成實際的計畫目錄。
+
+多人維護的 repo 常把 plan 放在 **gitignored 目錄**（例如 `local/plans/`）：plan 記錄的是一個人當時的打算，
+不適合進所有維護者共用、隨 repo 公開的版控。這種 repo 裡：
+
+- **不 commit，也絕不 `git add -f`**。gitignore 就是該 repo 的決定，強制加入等於把不公開的文件推進版控。
+- 「公開文件不得連結 plan」照舊適用，而且範圍更廣：**任何會 commit 的檔案**都不得連過去，
+  那個路徑在別人的 clone 裡根本不存在。
+- 封存目錄跟著計畫目錄走（例如 `local/plans/archive/`），不因下方「封存目錄建議入版控」而搬進 tracked 目錄。
+
+判斷一份 plan 是否在 gitignored 目錄：`git check-ignore -v <plan 路徑>` 有輸出就是。
+**不要用 `git status` 判斷**——被忽略的檔案不會出現在它的輸出裡，看起來跟「已 commit、無修改」一模一樣。
 
 ## Plan 狀態標記格式
 
@@ -91,12 +107,12 @@ plan **一定會**被整批搬進封存目錄，寫連結時就要讓它搬完�
 之下，plan 的生命週期（擬定 → 進行 → 完成 → 封存）就都在同一棵樹，且封存目錄名副其實
 （裡面就是 plan，不是雜項舊文件）。封存的 plan 必有完成狀態列。
 
-封存目錄**建議入版控**：plan 在 active 期間本就是 tracked，封存若排除等於做一次 delete commit
+計畫目錄入版控的 repo，封存目錄**建議入版控**：plan 在 active 期間本就是 tracked，封存若排除等於做一次 delete commit
 ——內容仍在 git history，只是不可瀏覽，成本付了卻沒拿到好處。入版控後它是維護者的團隊記憶，
 新 session 可直接查「當初為什麼這樣做」。**例外**：含未修安全弱點清單的 review 類 plan 不入公開
 版控（等同附上現成的攻擊面盤點），改放該 repo 的內部 / gitignored 目錄。
 
-各 repo 的實際約定（封存目錄位置、是否入版控）以該 repo 的說明（CLAUDE.md 或 CONTRIBUTING）為準。
+各 repo 的實際約定（計畫目錄、封存目錄位置、是否入版控）以該 repo 的說明（CLAUDE.md 或 CONTRIBUTING）為準。
 
 ## 常見錯誤
 
@@ -107,3 +123,6 @@ plan **一定會**被整批搬進封存目錄，寫連結時就要讓它搬完�
 - ❌ 建立 / 改完 plan 卻沒在回覆附上連結
 - ❌ 在 ADR / README / CHANGELOG 寫「執行細節見 `docs/plans/plan-xxx.md`」→ ✅ 該講的升格進 ADR 或對外文件，不引用 plan
 - ❌ plan 之間用 `../plans/plan-xxx.md` 互連 → ✅ 用同層裸相對路徑，封存後才不會全部失效
+- ❌ repo 的 `CLAUDE.md` 指定了計畫目錄，仍照預設寫進 `docs/plans/` → ✅ 動筆前先看 repo 約定
+- ❌ plan 在 gitignored 目錄，為了交接或留存改用 `git add -f` 加入 → ✅ 不入版控是該 repo 的決定，不 commit
+- ❌ 用 `git status` 沒列出就判定 plan「已 commit」→ ✅ 用 `git check-ignore -v` 確認是否被忽略
