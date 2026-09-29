@@ -80,12 +80,14 @@ git diff <last_tag>..HEAD -- "**/PublicAPI.Shipped.txt" | grep "^-" | grep -v "^
 > 正解是抽成共用檔，由每個需要的目錄顯式 import。
 
 bump 完掃一次舊版號殘留（CHANGELOG／逐版明細／plan 是歷史紀錄，故排除）。
+逐版明細的目錄依該 repo 而定（`docs/changelogs/`，或多語 repo 的 `docs/<lang>/changelogs/`），
+以路徑中的 `changelogs/` 一併排除。
 `<計畫目錄>` 依該 repo 約定，預設 `docs/plans`；`grep -r` 不理會 `.gitignore`，
 計畫目錄在 `local/plans` 這類 gitignored 目錄時同樣會被掃到，一樣要排除：
 
 ```bash
 grep -rn "<舊版號>" --include="*.md" . \
-  | grep -v CHANGELOG | grep -v "docs/changelogs/" | grep -v "<計畫目錄>/"
+  | grep -v CHANGELOG | grep -v "changelogs/" | grep -v "<計畫目錄>/"
 ```
 
 **命中要逐筆判讀，不可無腦清空。** 判別法與「文件不得複寫版號」的通則見

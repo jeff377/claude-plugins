@@ -25,14 +25,15 @@ description: 整理 CHANGELOG（自上一版 tag 至 HEAD），依 Conventional 
 | 要判定 | 怎麼看 |
 |--------|--------|
 | **語言** | 有無 `CHANGELOG.<lang>.md` 之類的並存檔？有就是多語，**每份都要改** |
-| **結構** | 條目是「每條一行 WHAT」還是「多句含 WHY」？有無 per-version 明細目錄（如 `docs/changelogs/<版號>.md`）？ |
+| **結構** | 條目是「每條一行 WHAT」還是「多句含 WHY」？有無 per-version 明細目錄？**位置以主檔連過去的路徑為準**，不要假設：常見 `docs/changelogs/<版號>.md`，多語 repo 也可能每種語言各一份（如 `docs/<lang>/changelogs/<版號>.md`，主檔各自連到自己語言的明細） |
 | **起始版本** | 最舊的條目是哪一版？**不回補更早的歷史**，除非使用者明說要 |
-| **ADR 連結慣例** | 既有條目有沒有連向 ADR？ADR 目錄在哪（常見 `docs/adr/`）？**沒有該目錄就跳過 Step 4** |
+| **ADR 連結慣例** | 既有條目有沒有連向 ADR？ADR 目錄在哪（常見 `docs/adr/`，也有 repo 放在 `maintainers/adr/` 之類的維護者目錄）？**沒有該目錄就跳過 Step 4** |
 
 ```bash
 ls CHANGELOG*.md                      # 語言版本
 head -60 CHANGELOG.md                 # 結構、起始版本、ADR 連結慣例
-ls docs/changelogs/ 2>/dev/null        # 有無 per-version 明細層
+grep -ohE '\]\([^)]*changelogs/[^)]*\)' CHANGELOG*.md | sort -u | head   # 主檔連到的明細檔 = 明細目錄的位置
+find . -type d \( -name changelogs -o -name adr \) -not -path '*/node_modules/*' -not -path './.git/*'
 ```
 
 **偵測不到（全新 repo、或第一次寫 CHANGELOG）才問使用者**，用 `AskUserQuestion` 逐項附選項：
@@ -93,7 +94,7 @@ git status                                         # 確認沒有 uncommitted ch
 對重大行為改動（breaking / 新模組 / 架構搬遷），掃 ADR 目錄找對應條目：
 
 ```bash
-ls docs/adr/ 2>/dev/null | grep -i <關鍵字>
+ls <ADR 目錄>/ | grep -i <關鍵字>        # Step 0 判定的目錄
 ```
 
 找到 → 條目末尾連結該 ADR（相對路徑，與既有條目的寫法一致）。
@@ -132,7 +133,7 @@ ls docs/adr/ 2>/dev/null | grep -i <關鍵字>
 > 是讀者掃讀時唯一需要看的敘事。版本性質特殊時（如嚴格 SemVer 屬 major、
 > 政策下以 minor 發佈）也在此一句帶過。
 
-📄 詳細變更與設計脈絡：[docs/changelogs/X.Y.Z.md](docs/changelogs/X.Y.Z.md)
+📄 詳細變更與設計脈絡：[<明細目錄>/X.Y.Z.md](<明細目錄>/X.Y.Z.md)
 
 ### 新增
 - `<套件/模組>`：<一行 WHAT>。
