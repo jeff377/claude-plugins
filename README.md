@@ -7,7 +7,7 @@
 
 | Plugin | 用途 | 內含 skill |
 |--------|------|-----------|
-| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢 / CHANGELOG 草稿 / 發版）。除 `release` 外與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit`、`changelog-draft`、`release`（**.NET / NuGet 專屬**） |
+| **dev-workflow** | 開發流程慣例（計畫撰寫 / 交接 / 執行閘門 / 設定檔健檢 / CHANGELOG 草稿 / 發版 / org repo 設定基準）。除 `release` 外與語言 / 框架無關 | `plan-write`、`session-handoff`、`plan-execute`、`config-audit`、`changelog-draft`、`release`（**.NET / NuGet 專屬**）、`org-baseline` |
 
 ## 安裝（在要使用的 repo 內）
 
@@ -79,10 +79,14 @@ claude-plugins/
             │   └── SKILL.md
             ├── changelog-draft/
             │   └── SKILL.md
-            └── release/
+            ├── release/
+            │   ├── SKILL.md
+            │   └── scripts/
+            │       └── merge-public-api-shipped.sh
+            └── org-baseline/
                 ├── SKILL.md
                 └── scripts/
-                    └── merge-public-api-shipped.sh
+                    └── org_baseline.py
 ```
 
 > **結構鐵則**：`skills/`、`agents/`、`hooks/` 一律放 plugin 根層；`.claude-plugin/` 內**只**放 manifest。
