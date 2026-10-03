@@ -82,6 +82,13 @@ def audit_repo(org, repo, baseline):
     shared = f"github.com/{org}/.github/blob/main/CONTRIBUTING.md"
     if contributing is not None and shared not in contributing:
         diffs.append(("file", f"CONTRIBUTING.md does not link to the shared guide ({shared})"))
+
+    # A contributor's coding agent reads the repository's agent guide, not the maintainer's own configuration.
+    guides = {path: file_text(org, repo, path) for path in (".claude/CLAUDE.md", "CLAUDE.md")}
+    if not any(guides.values()):
+        diffs.append(("file", "no agent guide (.claude/CLAUDE.md or CLAUDE.md) to point at the shared guide"))
+    elif not any(shared in text for text in guides.values() if text):
+        diffs.append(("file", f"the agent guide does not link to the shared guide ({shared})"))
     return diffs
 
 

@@ -1,6 +1,6 @@
 ---
 name: org-baseline
-description: 稽核並套用 GitHub org 內所有共同維護 repo 的一致設定 —— 合併方式（只允許 squash、合併後刪分支、允許 auto-merge）、main 的 branch protection 與各 repo 的必要檢查、CODEOWNERS、CONTRIBUTING 是否連到 org 共用指南。基準檔放在 `<org>/.github/repo-baseline.json`（單一權威來源），本 skill 只讀它、比對、在使用者同意後套用。當使用者要「新 repo 照 org 設定」、「檢查所有 repo 設定是否一致」、「org 設定稽核」、「branch protection 對齊」、「新開的 repo 要設什麼」、「協作規則套到所有 repo」之類需求時使用，在 org 新增 repo 時也要主動使用。**改 GitHub 設定是對外動作：每個 repo 先列出差異、取得使用者同意才套用；不為了讓稽核通過而改基準檔。**
+description: 稽核並套用 GitHub org 內所有共同維護 repo 的一致設定 —— 合併方式（只允許 squash、合併後刪分支、允許 auto-merge）、main 的 branch protection 與各 repo 的必要檢查、CODEOWNERS、CONTRIBUTING 與 agent 指引（CLAUDE.md）是否連到 org 共用指南。基準檔放在 `<org>/.github/repo-baseline.json`（單一權威來源），本 skill 只讀它、比對、在使用者同意後套用。當使用者要「新 repo 照 org 設定」、「檢查所有 repo 設定是否一致」、「org 設定稽核」、「branch protection 對齊」、「新開的 repo 要設什麼」、「協作規則套到所有 repo」之類需求時使用，在 org 新增 repo 時也要主動使用。**改 GitHub 設定是對外動作：每個 repo 先列出差異、取得使用者同意才套用；不為了讓稽核通過而改基準檔。**
 ---
 
 # Org repo 基準：稽核與套用
@@ -66,12 +66,14 @@ audit 的每一行標示修法：`[apply]` 由 apply 經 API 修正；`[commit]`
 - CODEOWNERS：`.github/CODEOWNERS` 放基準的那一行。
 - CONTRIBUTING：repo 自有的 CONTRIBUTING 只寫建置、測試與 repo 特有的慣例，共用的協作規則連到
   `https://github.com/<org>/.github/blob/main/CONTRIBUTING.md`，不複寫。沒有自有 CONTRIBUTING 的 repo 由 GitHub 顯示 org 版。
+- agent 指引（`.claude/CLAUDE.md` 或根目錄 `CLAUDE.md`）：也要連到同一份 org 指南。協作者的 coding agent 讀的是 repo 裡的
+  指引，讀不到維護者個人的 `~/.claude/`；沒有這份檔案的 repo 就新建一份精簡的。
 - 依該 repo 的工作流程提交（通常是分支 + PR）。
 
 ### org 新增 repo
 
 1. 在 `<org>/.github/repo-baseline.json` 的 `repos` 登記它與必要檢查（第一次 CI 跑完後才知道確切名稱）。
-2. 加 CODEOWNERS；CONTRIBUTING 視需要加（連到共用指南）。
+2. 加 CODEOWNERS 與連到共用指南的 agent 指引；CONTRIBUTING 視需要加（同樣連到共用指南）。
 3. 確認 CI 的只改文件跳過是在 job 內（見上方「套用」第 1 點）。
 4. `apply` → `audit` 對帳。
 
