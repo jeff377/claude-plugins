@@ -32,8 +32,14 @@ CHANGELOG 的產出走 **`/dev-workflow:changelog-draft`**（本 plugin 內）�
 | 至少一個 `feat`（無破壞性） | minor |
 | 僅 `fix` / `perf` / 內部變動 | patch |
 
-**pre-stable 例外**：專案若**明文**處於 pre-stable（0.x，或宣告過「尚無外部消費者」），
-允許在 minor 中包含 API 搬遷與破壞性變更——但**必須在 CHANGELOG 明列**，不可靜默。
+**repo 明文的版號政策優先於上表**。動手判定前先找：CHANGELOG 開頭、README 的安裝段、ADR 目錄裡關於版號／相容性的決策。
+常見的兩種：
+
+- **pre-stable**：0.x，或宣告過「尚無外部消費者」。
+- **穩定期政策**：例如「1.x 的 minor 版允許破壞性變更，patch 不行，2.0 起嚴格語意化版本」（polhem 的 ADR-052）。
+
+落在這類政策內時，破壞性變更升 **minor** 而非 major——但**必須在 CHANGELOG 明列並附遷移步驟**，不可靜默；
+**patch 版仍不得含破壞性變更**。沒有明文政策就照上表，不要因為「看起來沒人用」自行套用例外。
 
 ### 破壞性變更的判定
 
