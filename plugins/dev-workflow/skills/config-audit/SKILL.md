@@ -593,7 +593,7 @@ EOF
 
 `ListAgents` 會列出這台機器上其他的 Claude session。**挑一個啟動時間晚於更新的，
 用 `SendMessage` 直接問它看得到哪些 skill** —— 它啟動時載入的東西就是答案。
-比起 `spawn_task`（需要使用者點擊）或 `claude -p`（另一個行程，且可能因 OAuth 過期而起不來），
+比起 `start_session`（多開一個 session）或 `claude -p`（另一個行程，且可能因 OAuth 過期而起不來），
 這是最輕的一條，且不需要任何人動手。
 
 問話要指定**可分辨版本的探針**，不要只問「有沒有更新」：
